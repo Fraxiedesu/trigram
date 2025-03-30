@@ -43,6 +43,20 @@
         </div>
     </div>
 
+    <!-- Modal -->
+    <div id="noteModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
+        <div class="bg-white p-6 rounded-lg shadow-lg max-w-lg w-full">
+            <h2 id="modalTitle" class="text-xl font-bold text-amber-800"></h2>
+            <p id="modalText" class="text-amber-800 mt-2"></p>
+            <p id="modalCategory" class="text-amber-600 mt-2"></p>
+            <p id="modalDate" class="text-amber-600 mt-2"></p>
+            <div class="flex justify-between mt-4">
+                <button id="deleteNote" class="bg-red-700 text-white px-4 py-2 rounded-lg hover:bg-red-800">Delete</button>
+                <button id="closeModal" class="bg-red-700 text-white px-4 py-2 rounded-lg hover:bg-red-800">Close</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const noteTitle = document.getElementById('noteTitle');
@@ -51,10 +65,19 @@
             const saveNoteButton = document.getElementById('saveNote');
             const notesContainer = document.getElementById('notesContainer');
             const filterCategory = document.getElementById('filterCategory');
+            const noteModal = document.getElementById('noteModal');
+            const modalTitle = document.getElementById('modalTitle');
+            const modalText = document.getElementById('modalText');
+            const modalCategory = document.getElementById('modalCategory');
+            const modalDate = document.getElementById('modalDate');
+            const closeModal = document.getElementById('closeModal');
+            const deleteNoteButton = document.getElementById('deleteNote');
+
+            let currentNoteId = null;
 
             const loadNotes = () => {
                 const notes = JSON.parse(localStorage.getItem('notes')) || [];
-                notes.forEach(note => {
+                notes.reverse().forEach(note => {
                     const noteElement = createNoteElement(note);
                     notesContainer.appendChild(noteElement);
                 });
@@ -66,23 +89,21 @@
 
             const createNoteElement = (note) => {
                 const noteElement = document.createElement('div');
-                noteElement.className = 'bg-white p-4 rounded-lg shadow-md';
+                noteElement.className = 'bg-white p-4 rounded-lg shadow-md break-words cursor-pointer';
                 noteElement.dataset.category = note.category;
+                noteElement.dataset.id = note.id;
                 noteElement.innerHTML = `
                     <h2 class="text-xl font-bold text-amber-800">${note.title}</h2>
-                    <p class="text-amber-800 mt-2">${note.text}</p>
                     <p class="text-amber-600 mt-2"><strong>Category:</strong> ${note.category}</p>
                     <p class="text-amber-600 mt-2"><strong>Date:</strong> ${note.date}</p>
-                    <div class="flex justify-end mt-2">
-                        <button class="deleteNote bg-red-700 text-white px-2 py-1 rounded-lg hover:bg-red-800">Delete</button>
-                    </div>
                 `;
-                const deleteButton = noteElement.querySelector('.deleteNote');
-                deleteButton.addEventListener('click', () => {
-                    notesContainer.removeChild(noteElement);
-                    const notes = JSON.parse(localStorage.getItem('notes')) || [];
-                    const updatedNotes = notes.filter(n => n.id !== note.id);
-                    saveNotes(updatedNotes);
+                noteElement.addEventListener('click', () => {
+                    modalTitle.textContent = note.title;
+                    modalText.textContent = note.text;
+                    modalCategory.innerHTML = `<strong>Category:</strong> ${note.category}`;
+                    modalDate.innerHTML = `<strong>Date:</strong> ${note.date}`;
+                    currentNoteId = note.id;
+                    noteModal.classList.remove('hidden');
                 });
                 return noteElement;
             };
@@ -91,7 +112,7 @@
                 const titleText = noteTitle.value.trim();
                 const noteText = noteInput.value.trim();
                 const categoryText = noteCategory.value;
-                const currentDate = new Date().toLocaleDateString();
+                const currentDate = new Date().toLocaleString();
                 if (titleText && noteText && categoryText) {
                     const note = {
                         id: Date.now(),
@@ -101,7 +122,7 @@
                         date: currentDate
                     };
                     const noteElement = createNoteElement(note);
-                    notesContainer.appendChild(noteElement);
+                    notesContainer.prepend(noteElement);
                     const notes = JSON.parse(localStorage.getItem('notes')) || [];
                     notes.push(note);
                     saveNotes(notes);
@@ -121,6 +142,21 @@
                         note.style.display = 'none';
                     }
                 });
+            });
+
+            closeModal.addEventListener('click', () => {
+                noteModal.classList.add('hidden');
+            });
+
+            deleteNoteButton.addEventListener('click', () => {
+                const notes = JSON.parse(localStorage.getItem('notes')) || [];
+                const updatedNotes = notes.filter(note => note.id !== currentNoteId);
+                saveNotes(updatedNotes);
+                const noteElement = notesContainer.querySelector(`div[data-id='${currentNoteId}']`);
+                if (noteElement) {
+                    notesContainer.removeChild(noteElement);
+                }
+                noteModal.classList.add('hidden');
             });
 
             loadNotes();
