@@ -1,21 +1,130 @@
-<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Note Saver</title>
-    <link rel="stylesheet" href="style.css">
+    <title>Cozy Note App</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css"></link>
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Quicksand', sans-serif;
+        }
+    </style>
 </head>
-<body>
-    <div class="container">
-        <h1>Note Saver</h1>
-        <textarea id="noteInput" placeholder="Write your note here..."></textarea>
-        <button id="saveNote">Save Note</button>
-        <div id="notesContainer">
-            <h2>Your Notes</h2>
-            <ul id="notesList"></ul>
+<body class="bg-amber-50 min-h-screen flex flex-col items-center p-4">
+    <div class="w-full max-w-2xl bg-white rounded-lg shadow-lg p-6">
+        <h1 class="text-2xl font-bold mb-4 text-center text-amber-800">Cozy Note App</h1>
+        <div class="mb-4">
+            <input id="noteTitle" class="w-full p-2 border border-amber-700 rounded-lg mb-2" type="text" placeholder="Title">
+            <textarea id="noteInput" class="w-full p-2 border border-amber-700 rounded-lg mb-2" rows="4" placeholder="Write your note here..."></textarea>
+            <select id="noteCategory" class="w-full p-2 border border-amber-700 rounded-lg mb-2">
+                <option value="" disabled selected>Select Category</option>
+                <option value="Work">Work</option>
+                <option value="Personal">Personal</option>
+                <option value="Shopping">Shopping</option>
+                <option value="Others">Others</option>
+            </select>
+        </div>
+        <div class="flex justify-end mb-4">
+            <button id="saveNote" class="bg-amber-700 text-white px-4 py-2 rounded-lg hover:bg-amber-800">Save Note</button>
+        </div>
+        <div class="mb-4">
+            <select id="filterCategory" class="w-full p-2 border border-amber-700 rounded-lg mb-2">
+                <option value="All">All Categories</option>
+                <option value="Work">Work</option>
+                <option value="Personal">Personal</option>
+                <option value="Shopping">Shopping</option>
+                <option value="Others">Others</option>
+            </select>
+        </div>
+        <div id="notesContainer" class="space-y-4">
+            <!-- Notes will be appended here -->
         </div>
     </div>
-    <script src="script.js"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const noteTitle = document.getElementById('noteTitle');
+            const noteInput = document.getElementById('noteInput');
+            const noteCategory = document.getElementById('noteCategory');
+            const saveNoteButton = document.getElementById('saveNote');
+            const notesContainer = document.getElementById('notesContainer');
+            const filterCategory = document.getElementById('filterCategory');
+
+            const loadNotes = () => {
+                const notes = JSON.parse(localStorage.getItem('notes')) || [];
+                notes.forEach(note => {
+                    const noteElement = createNoteElement(note);
+                    notesContainer.appendChild(noteElement);
+                });
+            };
+
+            const saveNotes = (notes) => {
+                localStorage.setItem('notes', JSON.stringify(notes));
+            };
+
+            const createNoteElement = (note) => {
+                const noteElement = document.createElement('div');
+                noteElement.className = 'bg-white p-4 rounded-lg shadow-md';
+                noteElement.dataset.category = note.category;
+                noteElement.innerHTML = `
+                    <h2 class="text-xl font-bold text-amber-800">${note.title}</h2>
+                    <p class="text-amber-800 mt-2">${note.text}</p>
+                    <p class="text-amber-600 mt-2"><strong>Category:</strong> ${note.category}</p>
+                    <p class="text-amber-600 mt-2"><strong>Date:</strong> ${note.date}</p>
+                    <div class="flex justify-end mt-2">
+                        <button class="deleteNote bg-red-700 text-white px-2 py-1 rounded-lg hover:bg-red-800">Delete</button>
+                    </div>
+                `;
+                const deleteButton = noteElement.querySelector('.deleteNote');
+                deleteButton.addEventListener('click', () => {
+                    notesContainer.removeChild(noteElement);
+                    const notes = JSON.parse(localStorage.getItem('notes')) || [];
+                    const updatedNotes = notes.filter(n => n.id !== note.id);
+                    saveNotes(updatedNotes);
+                });
+                return noteElement;
+            };
+
+            saveNoteButton.addEventListener('click', () => {
+                const titleText = noteTitle.value.trim();
+                const noteText = noteInput.value.trim();
+                const categoryText = noteCategory.value;
+                const currentDate = new Date().toLocaleDateString();
+                if (titleText && noteText && categoryText) {
+                    const note = {
+                        id: Date.now(),
+                        title: titleText,
+                        text: noteText,
+                        category: categoryText,
+                        date: currentDate
+                    };
+                    const noteElement = createNoteElement(note);
+                    notesContainer.appendChild(noteElement);
+                    const notes = JSON.parse(localStorage.getItem('notes')) || [];
+                    notes.push(note);
+                    saveNotes(notes);
+                    noteTitle.value = '';
+                    noteInput.value = '';
+                    noteCategory.value = '';
+                }
+            });
+
+            filterCategory.addEventListener('change', () => {
+                const selectedCategory = filterCategory.value;
+                const notes = notesContainer.querySelectorAll('div[data-category]');
+                notes.forEach(note => {
+                    if (selectedCategory === 'All' || note.dataset.category === selectedCategory) {
+                        note.style.display = 'block';
+                    } else {
+                        note.style.display = 'none';
+                    }
+                });
+            });
+
+            loadNotes();
+        });
+    </script>
 </body>
 </html>
